@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    
+    <title>Vulnex Messenger</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <script>
+        const notificationSound = new Audio('https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3');
+    </script>
+</head>
+<body>
+
+    <div id="login-screen">
+        <h1 style="font-size: 2.5em; margin-bottom: 10px;">VULNEX</h1>
+        <p style="opacity: 0.6; margin-bottom: 30px;">Secure Encrypted Messenger</p>
+        
+        <input type="text" id="username-input" placeholder="Username">
+        <input type="password" id="password-input" placeholder="Password">
+        
+        <div id="status-msg" style="min-height: 20px; color: #ff6b6b; margin: 10px; font-weight: bold; font-size: 0.9em; max-width: 80%; text-align: center;"></div>
+
+        <button class="auth-btn" onclick="tryLogin()">LOGIN</button>
+        <button class="auth-btn" onclick="tryRegister()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2);">REGISTER</button>
+    </div>
+
+    <div class="chat-container hidden" id="main-chat">
+        <div class="chat-header">
+            <div class="header-left">
+                <div class="online-dot"></div>
+                <div class="header-title" id="my-name-display">Chat</div>
+            </div>
+            <i class="fas fa-shield-alt" style="font-size: 1.5em; opacity: 0.8;"></i>
+        </div>
+        
+        <div id="chat-box"></div>
+        <div id="typing-indicator"></div>
+
+        <div class="input-area">
+            <input type="text" id="message-input" placeholder="Type a message...">
+            <button onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var socket = io();
+        var myUsername = "";
+        var typingTimer;
+
+        function tryRegister() {
+            var u = document.getElementById("username-input").value;
+            var p = document.getElementById("password-input").value;
+            if(u && p) socket.emit('register', {user: u, pass: p});
+        }
+
+        function tryLogin() {
+            var u = document.getElementById("username-input").value;
+            var p = document.getElementById("password-input").value;
+            if(u && p) { myUsername = u; socket.emit('login', {user: u, pass: p}); }
+        }
+
+        socket.on('register_response', function(data) {
+            document.getElementById("status-msg").innerText = data.msg;
+        });
+
+        socket.on('login_response', function(data) {
+            if(data.status === 'success') {
+                document.getElementById("login-screen").classList.add("hidden");
+                document.getElementById("main-chat").classList.remove("hidden");
+                document.getElementById("my-name-display").innerText = myUsername;
+            } else {
+                // Show the Ban/Error Message
+                var statusBox = document.getElementById("status-msg");
+                statusBox.innerText = data.msg;
+                // Shake animation for error
+                statusBox.style.animation = "shake 0.5s";
+                setTimeout(() => statusBox.style.animation = "", 500);
+            }
+        });
+
+        socket.on('message', function(data) {
+            var chatBox = document.getElementById("chat-box");
+            var wrapper = document.createElement("div");
+            wrapper.classList.add("message-wrapper");
+
+            if (data.user === 'SYSTEM') {
+                wrapper.classList.add("system");
+                wrapper.innerHTML = `<div class="message-content">${data.msg}</div>`;
+            } else {
+                var ticksHtml = "";
+                if (data.user === myUsername) {
+                    wrapper.classList.add("sent");
+                    ticksHtml = '<span class="ticks"><i class="fas fa-check-double"></i></span>';
+                } else {
+                    wrapper.classList.add("received");
+                    notificationSound.play().catch(e => console.log("Audio play failed"));
+                }
+
+                var avatar = document.createElement("div");
+                avatar.classList.add("avatar");
+                avatar.innerText = data.user.charAt(0).toUpperCase();
+
+                var content = document.createElement("div");
+                content.classList.add("message-content");
+                var timeText = data.time ? data.time : ""; 
+                content.innerHTML = `<span>${data.msg}</span> <div class="meta-row"><span class="timestamp">${timeText}</span>${ticksHtml}</div>`;
+                
+                wrapper.appendChild(avatar);
+                wrapper.appendChild(content);
+            }
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            document.getElementById("typing-indicator").innerText = "";
+        });
+
+        var inputField = document.getElementById("message-input");
+        inputField.addEventListener('input', function() { socket.emit('typing', {user: myUsername}); });
+        socket.on('display_typing', function(data) {
+            var indicator = document.getElementById("typing-indicator");
+            indicator.innerText = data.user + " is typing...";
+            clearTimeout(typingTimer);
+            typingTimer = setTimeout(function() { indicator.innerText = ""; }, 2000);
+        });
+
+        function sendMessage() {
+            var msg = inputField.value;
+            if (msg.trim() !== "") { socket.send({ user: myUsername, msg: msg }); inputField.value = ""; }
+        }
+        inputField.addEventListener("keypress", function(event) { if (event.key === "Enter") sendMessage(); });
+    </script>
+    <style>
+        @keyframes shake { 0% { transform: translateX(0); } 25% { transform: translateX(-5px); } 50% { transform: translateX(5px); } 75% { transform: translateX(-5px); } 100% { transform: translateX(0); } }
+    </style>
+</body>
+</html>

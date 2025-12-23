@@ -1,0 +1,77 @@
+/* --- 🎨 VULNEX REDMI PRO THEME --- */
+body {
+    background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+    color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    display: flex; justify-content: center; align-items: center;
+    height: 100vh; margin: 0; overflow: hidden;
+}
+
+/* --- CONTAINER --- */
+.chat-container {
+    width: 90%; max-width: 1000px; height: 90vh;
+    background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 20px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+    display: flex; flex-direction: column; overflow: hidden; position: relative;
+}
+
+/* 📱 MOBILE FIX FOR REDMI */
+@media (max-width: 768px) {
+    .chat-container {
+        width: 100%;
+        /* 100dvh = Dynamic Viewport Height (Ignores address bars) */
+        height: 100dvh; 
+        border-radius: 0;
+        border: none;
+    }
+    body { background: #1a1a2e; } /* Solid background for mobile performance */
+}
+
+/* --- HEADER --- */
+.chat-header {
+    background: rgba(0, 0, 0, 0.3); padding: 15px 20px;
+    display: flex; justify-content: space-between; align-items: center;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    flex-shrink: 0; /* Header stays fixed size */
+}
+.header-left { display: flex; align-items: center; gap: 10px; }
+.header-title { font-weight: bold; font-size: 1.2em; }
+.online-dot { width: 10px; height: 10px; background-color: #00ff41; border-radius: 50%; box-shadow: 0 0 10px #00ff41; animation: pulse 2s infinite; }
+@keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+/* --- CHAT BOX --- */
+#chat-box {
+    flex: 1; overflow-y: auto; padding: 20px;
+    display: flex; flex-direction: column; gap: 15px; scrollbar-width: thin;
+}
+
+/* --- BUBBLES --- */
+.message-wrapper { display: flex; align-items: flex-end; gap: 10px; max-width: 85%; animation: popIn 0.3s ease; }
+.avatar { width: 35px; height: 35px; border-radius: 50%; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; justify-content: center; align-items: center; font-weight: bold; font-size: 0.9em; color: white; flex-shrink: 0; }
+.message-content { padding: 10px 15px; border-radius: 18px; position: relative; font-size: 0.95em; line-height: 1.4; word-wrap: break-word; display: flex; flex-direction: column; min-width: 80px; }
+.meta-row { display: flex; justify-content: flex-end; align-items: center; gap: 5px; margin-top: 4px; opacity: 0.7; }
+.timestamp { font-size: 0.65em; }
+.ticks { font-size: 0.8em; color: #a8ffc4; letter-spacing: -2px; }
+
+.message-wrapper.sent { align-self: flex-end; flex-direction: row-reverse; }
+.message-wrapper.sent .message-content { background: linear-gradient(135deg, #00b09b, #96c93d); color: white; border-bottom-right-radius: 4px; }
+.message-wrapper.received { align-self: flex-start; }
+.message-wrapper.received .message-content { background: rgba(255, 255, 255, 0.15); color: #e0e0e0; border-bottom-left-radius: 4px; }
+
+/* SYSTEM MESSAGES */
+.message-wrapper.system { align-self: center; max-width: 90%; margin: 10px 0; }
+.message-wrapper.system .message-content { background: transparent; color: #a8b8d0; font-size: 0.8em; font-style: italic; border: 1px solid rgba(255,255,255,0.1); padding: 5px 15px; }
+.message-wrapper.system .avatar, .message-wrapper.system .meta-row { display: none; }
+
+/* --- INPUT AREA --- */
+.input-area { padding: 10px; background: rgba(0, 0, 0, 0.3); display: flex; align-items: center; flex-shrink: 0; padding-bottom: max(10px, env(safe-area-inset-bottom)); }
+.input-area input { flex: 1; padding: 12px 15px; border-radius: 25px; border: none; background: rgba(255, 255, 255, 0.1); color: white; outline: none; font-size: 16px; /* Prevents iOS zoom */ }
+button { background: #00b09b; color: white; border: none; padding: 10px; width: 45px; height: 45px; border-radius: 50%; margin-left: 10px; cursor: pointer; }
+
+/* --- LOGIN SCREEN --- */
+#login-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #1a1a2e; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 100; }
+#login-screen input { width: 80%; max-width: 300px; height: 50px; margin: 10px 0; padding: 0 15px; text-align: center; background: #0f0c29; border: 1px solid #302b63; color: white; border-radius: 25px; outline: none; }
+.auth-btn { width: 80%; max-width: 300px; height: 50px; border-radius: 25px; margin-top: 15px; background: linear-gradient(90deg, #00b09b, #96c93d); color: white; font-weight: bold; cursor: pointer; border: none; }
+.hidden { display: none !important; }
+@keyframes popIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>⚡ VULNEX GOD MODE ⚡</title>
+    <meta http-equiv="refresh" content="3">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        body { flex-direction: column; justify-content: start; padding-top: 50px; }
+        .dashboard { width: 800px; display: flex; flex-direction: column; gap: 20px; }
+        .panel { background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 20px; box-shadow: 0 0 15px rgba(255, 0, 0, 0.1); }
+        h2 { color: #ff4444; border-bottom: 1px solid #333; padding-bottom: 10px; margin-top: 0; }
+        table { width: 100%; border-collapse: collapse; color: #c9d1d9; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #30363d; }
+        th { color: #00ff41; }
+        .badge-ban { background: #ff4444; color: black; padding: 2px 5px; border-radius: 3px; font-weight: bold; }
+        .badge-safe { background: #238636; color: white; padding: 2px 5px; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1 style="color: #ff4444; text-shadow: 0 0 10px red;">🦅 VULNEX COMMAND CENTER</h1>
+    <div class="dashboard">
+        <div class="panel">
+            <h2>🚫 ACTIVE SYSTEM LOCKDOWNS</h2>
+            {% if bans %}
+                <table>
+                    <thead><tr><th>IP Address</th><th>Attempts</th><th>Status</th></tr></thead>
+                    <tbody>
+                        {% for ip, data in bans.items() %}
+                        <tr><td>{{ ip }}</td><td>{{ data['attempts'] }} / 3</td><td><span class="badge-ban">BANNED</span></td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            {% else %}
+                <p style="color: #8b949e;">No active threats detected.</p>
+            {% endif %}
+        </div>
+        <div class="panel">
+            <h2>⚔️ SECURITY INCIDENT LOG</h2>
+            <table>
+                <thead><tr><th>Time</th><th>Attacker</th><th>Type</th><th>Payload</th></tr></thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td style="color: #8b949e;">{{ log.time }}</td>
+                        <td style="font-weight: bold;">{{ log.user }}</td>
+                        <td style="color: #ff4444;">{{ log.type }}</td>
+                        <td style="font-family: monospace;">{{ log.payload }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</body>
+</html>

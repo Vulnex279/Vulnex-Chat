@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnex Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-card">
+        <h1 style="color:#3390ec; margin-bottom: 10px;">🦅 VULNEX</h1>
+        <p style="color:#708499; margin-bottom: 30px;">Secure Terminal Access</p>
+        <form action="/login" method="POST">
+            <input type="text" name="username" class="auth-input" placeholder="Codename" required autocomplete="off">
+            <input type="password" name="password" class="auth-input" placeholder="Passkey" required>
+            <button type="submit" class="auth-btn">AUTHORIZE</button>
+        </form>
+        <p style="margin-top:20px; font-size: 0.9rem;">
+            New Operator? <a href="/register" style="color:#3390ec; text-decoration: none; font-weight: bold;">Create Credentials</a>
+        </p>
+    </div>
+</body>
+</html>

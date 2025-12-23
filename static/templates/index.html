@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vulnex Ultimate</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script> 
+    <link rel="manifest" href="{{ url_for('static', filename='manifest.json') }}">
+</head>
+<body data-user="{{ session['username'] }}">
+    
+    <div class="app-container">
+        <aside class="sidebar">
+            <div class="header-box">
+                <h2 style="color:#3390ec; margin:0;">🦅 VULNEX</h2>
+                <div style="font-size:0.8rem; color:#708499; margin-top:5px;">Operator: {{ session['username'] }}</div>
+                <input type="text" id="user-search" placeholder="Search operatives..." onkeyup="searchUsers()">
+            </div>
+            <div id="user-list" class="user-list"></div>
+            <div style="padding:15px; border-top:1px solid rgba(255,255,255,0.05);">
+                <a href="{{ url_for('logout') }}" style="color:#ff5c5c; text-decoration:none; font-weight:bold;">🛑 Logout</a>
+            </div>
+        </aside>
+
+        <main class="chat-window">
+            <header class="chat-header">
+                <button id="back-btn" onclick="closeChat()">⬅</button>
+                <div class="info">
+                    <h3 id="active-user" style="margin:0;">Select Terminal</h3>
+                    <span id="typing-status" style="color:#3390ec; font-size:0.8rem;"></span>
+                </div>
+            </header>
+
+            <div id="message-area" class="message-area"></div>
+
+            <div class="input-zone">
+                <input type="file" id="file-up" style="display:none" onchange="uploadFile()">
+                <button onclick="document.getElementById('file-up').click()" class="icon-btn">📎</button>
+                
+                <input type="text" id="msg-in" placeholder="Type encrypted message..." autocomplete="off">
+                
+                <button id="send-btn" class="icon-btn">➤</button>
+            </div>
+        </main>
+    </div>
+
+    <audio id="ping-sound" src="https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3"></audio>
+    
+    <script src="{{ url_for('static', filename='style.js') }}"></script>
+</body>
+</html>

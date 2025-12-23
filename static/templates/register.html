@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vulnex Registry</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="auth-page">
+    <div class="auth-card">
+        <h1 style="color:#00a884; margin-bottom: 10px;">📝 REGISTRY</h1>
+        <p style="color:#708499; margin-bottom: 30px;">Create Secure Identity</p>
+        <form action="/register" method="POST">
+            <input type="text" name="username" class="auth-input" placeholder="Choose Codename" required autocomplete="off">
+            <input type="password" name="password" class="auth-input" placeholder="Set Passkey" required>
+            <button type="submit" class="auth-btn" style="background:#00a884;">REGISTER IDENTITY</button>
+        </form>
+        <p style="margin-top:20px; font-size: 0.9rem;">
+            Already have clearance? <a href="/login" style="color:#3390ec; text-decoration: none; font-weight: bold;">Back to Login</a>
+        </p>
+    </div>
+</body>
+</html>

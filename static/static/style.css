@@ -1,0 +1,55 @@
+:root { --bg: #0f1621; --side: #17212b; --accent: #3390ec; --sent: #2b5278; --got: #182533; }
+body, html { margin:0; padding:0; height:100%; background:var(--bg); font-family: 'Segoe UI', sans-serif; color:white; overflow:hidden; }
+
+/* --- 📱 MOBILE RESPONSIVE LOGIC --- */
+.app-container { display:flex; height:100vh; width: 100vw; position: relative; overflow: hidden; }
+
+/* Desktop Default */
+.sidebar { width:320px; background:var(--side); border-right:1px solid rgba(255,255,255,0.05); display:flex; flex-direction:column; z-index: 2; }
+.chat-window { flex:1; display:flex; flex-direction:column; background: #0e1621; z-index: 1; }
+
+/* Mobile Override */
+@media (max-width: 768px) {
+    .sidebar { width: 100% !important; position: absolute; height: 100%; transition: transform 0.3s ease-in-out; }
+    .chat-window { width: 100% !important; position: absolute; height: 100%; transform: translateX(100%); transition: transform 0.3s ease-in-out; }
+    
+    /* When 'mobile-active' class is added to body via JS */
+    body.mobile-active .sidebar { transform: translateX(-100%); }
+    body.mobile-active .chat-window { transform: translateX(0); }
+    
+    /* Show back button only on mobile */
+    #back-btn { display: block !important; margin-right: 15px; }
+}
+
+/* --- UI ELEMENTS --- */
+.header-box { padding:20px; background:rgba(0,0,0,0.2); }
+#user-search { width:100%; padding:10px; border-radius:10px; border:none; background:#000; color:white; box-sizing:border-box; margin-top: 10px; outline: none; }
+.user-list { flex:1; overflow-y:auto; }
+.user-item { padding:15px; cursor:pointer; display:flex; align-items:center; border-bottom:1px solid rgba(255,255,255,0.02); transition: 0.2s; }
+.user-item:hover { background:rgba(255,255,255,0.05); }
+.avatar { width:45px; height:45px; background:var(--accent); border-radius:50%; margin-right:15px; display:flex; align-items:center; justify-content:center; font-weight:bold; font-size: 1.2rem; }
+.dot { width:10px; height:10px; background:#555; border-radius:50%; margin-left:auto; }
+.dot.on { background:#00a884; box-shadow:0 0 8px #00a884; }
+
+.chat-header { padding:15px 20px; background:var(--side); display:flex; align-items:center; border-bottom:1px solid rgba(0,0,0,0.2); height: 60px; }
+#back-btn { display: none; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; }
+
+.message-area { flex:1; padding:20px; overflow-y:auto; display:flex; flex-direction:column; background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 30px 30px; }
+
+.bubble { padding:10px 15px; margin:5px 0; border-radius:15px; max-width:75%; animation: slideUp 0.3s ease; position:relative; word-wrap: break-word; }
+@keyframes slideUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+.sent { background:var(--sent); align-self:flex-end; border-bottom-right-radius:2px; }
+.received { background:var(--got); align-self:flex-start; border-bottom-left-radius:2px; }
+.ts { font-size:0.7rem; opacity:0.6; display:block; text-align:right; margin-top:5px; }
+
+.input-zone { padding:10px; background:var(--side); display: flex; align-items: center; gap: 10px; }
+#msg-in { flex:1; background:rgba(0,0,0,0.2); border:none; padding:15px; border-radius:25px; color:white; outline:none; font-size: 1rem; }
+.icon-btn { background:none; border:none; color:var(--accent); font-size:1.5rem; cursor:pointer; padding: 5px; }
+
+/* --- LOGIN & REGISTER DESIGN --- */
+.auth-page { display:flex; justify-content:center; align-items:center; height:100vh; background: linear-gradient(135deg, #0f1621, #17212b); }
+.auth-card { background:rgba(23, 33, 43, 0.9); padding:40px; border-radius:20px; width:350px; text-align:center; box-shadow: 0 10px 40px rgba(0,0,0,0.5); animation: fadeIn 0.8s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+.auth-input { width:100%; padding:15px; margin-bottom:15px; border-radius:10px; border:none; background:#000; color:white; box-sizing:border-box; font-size: 1rem; outline: none; }
+.auth-btn { width:100%; padding:15px; background:var(--accent); color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer; font-size: 1rem; transition: 0.2s; }
+.auth-btn:hover { transform: scale(1.02); }

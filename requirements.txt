@@ -1,6 +1,0 @@
-Flask
-flask-socketio
-cryptography
-gunicorn
-eventlet
-werkzeug

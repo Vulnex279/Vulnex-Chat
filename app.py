@@ -1,154 +1,126 @@
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask_socketio import SocketIO, emit, join_room
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 import sqlite3
 import os
-import html
 import time
-from datetime import datetime
-from flask import Flask, render_template, request
-from flask_socketio import SocketIO, send, emit
-from cryptography.fernet import Fernet
-from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'vulnex_secret_key_123'
+app.config['SECRET_KEY'] = 'vulnex_ultimate_final_v99'
+app.config['UPLOAD_FOLDER'] = 'static/uploads'
+
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+
 socketio = SocketIO(app, cors_allowed_origins="*")
+online_users = set()
 
-# --- MEMORY ---
-connected_users = {} 
-failed_attempts = {} # 🛡️ FIREWALL MEMORY: { 'IP_ADDRESS': {'count': 0, 'ban_until': 0} }
-
-# --- KEYS ---
-if os.path.exists("secret.key"):
-    with open("secret.key", "rb") as key_file:
-        key = key_file.read()
-else:
-    key = Fernet.generate_key()
-    with open("secret.key", "wb") as key_file:
-        key_file.write(key)
-cipher_suite = Fernet(key)
-
-# --- DB INIT ---
-def init_db():
+def get_db():
     conn = sqlite3.connect('chat_history.db')
-    curr = conn.cursor()
-    curr.execute('''CREATE TABLE IF NOT EXISTS Messages (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT, content TEXT, timestamp TEXT)''')
-    curr.execute('''CREATE TABLE IF NOT EXISTS Users (username TEXT PRIMARY KEY, password_hash TEXT)''')
-    conn.commit()
-    conn.close()
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_db():
+    with app.app_context():
+        db = get_db()
+        db.execute('CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE, password TEXT)')
+        db.execute('CREATE TABLE IF NOT EXISTS messages (id INTEGER PRIMARY KEY AUTOINCREMENT, sender TEXT, recipient TEXT, message TEXT, type TEXT, timestamp REAL, seen INTEGER DEFAULT 0)')
+        db.commit()
+        db.close()
+
 init_db()
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    if 'username' in session: return render_template('index.html')
+    return redirect(url_for('login'))
 
-# --- EVENTS ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        u = request.form['username'].strip()
+        user = get_db().execute('SELECT * FROM users WHERE username = ?', (u,)).fetchone()
+        if user and check_password_hash(user['password'], request.form['password']):
+            session['username'] = u
+            return redirect(url_for('index'))
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        h = generate_password_hash(request.form['password'])
+        db = get_db()
+        try:
+            db.execute('INSERT INTO users (username, password) VALUES (?, ?)', (request.form['username'].strip(), h))
+            db.commit()
+            return redirect(url_for('login'))
+        except: return "Taken"
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    return redirect(url_for('login'))
+
+@app.route('/get_users')
+def get_users():
+    if 'username' not in session: return jsonify([])
+    users = get_db().execute('SELECT username FROM users WHERE username != ?', (session['username'],)).fetchall()
+    return jsonify([{'username': u['username'], 'online': u['username'] in online_users} for u in users])
+
+@app.route('/get_history/<partner>')
+def get_history(partner):
+    db = get_db()
+    db.execute('UPDATE messages SET seen = 1 WHERE sender = ? AND recipient = ?', (partner, session['username']))
+    db.commit()
+    msgs = db.execute('SELECT * FROM messages WHERE (sender=? AND recipient=?) OR (sender=? AND recipient=?) ORDER BY timestamp ASC', (session['username'], partner, partner, session['username'])).fetchall()
+    return jsonify([dict(m) for m in msgs])
+
+@app.route('/upload', methods=['POST'])
+def upload():
+    if 'file' not in request.files: return jsonify({'error': 'no file'})
+    f = request.files['file']
+    fn = secure_filename(f.filename)
+    path = os.path.join(app.config['UPLOAD_FOLDER'], f"{int(time.time())}_{fn}")
+    f.save(path)
+    
+    ftype = 'file'
+    if fn.lower().endswith(('.png', '.jpg', '.jpeg', '.gif')): ftype = 'image'
+    elif fn.lower().endswith(('.wav', '.mp3', '.webm', '.ogg')): ftype = 'audio'
+    
+    return jsonify({'url': f"/{path}", 'type': ftype})
 
 @socketio.on('connect')
-def handle_connect():
-    pass
+def connect():
+    if 'username' in session:
+        online_users.add(session['username'])
+        emit('status_change', {'user': session['username'], 'status': 'online'}, broadcast=True)
 
 @socketio.on('disconnect')
-def handle_disconnect():
-    user = connected_users.get(request.sid)
-    if user:
-        del connected_users[request.sid]
-        print(f"❌ {user} disconnected.")
-        emit('message', {'user': 'SYSTEM', 'msg': f'{user} has left the channel.', 'time': ''}, broadcast=True)
+def disconnect():
+    if 'username' in session:
+        online_users.discard(session['username'])
+        emit('status_change', {'user': session['username'], 'status': 'offline'}, broadcast=True)
+
+@socketio.on('join_private')
+def join(data):
+    join_room("_".join(sorted([data['username'], data['partner']])))
+
+@socketio.on('private_message')
+def msg(data):
+    room = "_".join(sorted([data['sender'], data['recipient']]))
+    db = get_db()
+    db.execute('INSERT INTO messages (sender, recipient, message, type, timestamp) VALUES (?,?,?,?,?)', 
+               (data['sender'], data['recipient'], data['msg'], data.get('type','text'), time.time()))
+    db.commit()
+    data['timestamp'] = time.time()
+    emit('new_message', data, room=room)
 
 @socketio.on('typing')
-def handle_typing(data):
-    emit('display_typing', {'user': data['user']}, broadcast=True, include_self=False)
-
-@socketio.on('login')
-def handle_login(data):
-    # 🛡️ 1. GET USER IP (Simulated for Localhost)
-    # In real cloud, we would use request.remote_addr or headers
-    user_ip = request.remote_addr 
-    
-    # 🛡️ 2. CHECK FIREWALL
-    current_time = time.time()
-    if user_ip in failed_attempts:
-        record = failed_attempts[user_ip]
-        # Is user currently banned?
-        if record['ban_until'] > current_time:
-            wait_time = int(record['ban_until'] - current_time)
-            emit('login_response', {'status': 'fail', 'msg': f'⛔ SYSTEM LOCKDOWN. Try again in {wait_time}s.'})
-            return
-
-    username = data['user']
-    password = data['pass']
-    
-    conn = sqlite3.connect('chat_history.db')
-    curr = conn.cursor()
-    curr.execute("SELECT password_hash FROM Users WHERE username=?", (username,))
-    row = curr.fetchone()
-    conn.close()
-    
-    if row and check_password_hash(row[0], password):
-        # ✅ SUCCESS: Reset attempts
-        if user_ip in failed_attempts:
-            del failed_attempts[user_ip]
-            
-        connected_users[request.sid] = username
-        emit('login_response', {'status': 'success'})
-        emit('message', {'user': 'SYSTEM', 'msg': f'{username} has joined.', 'time': ''}, broadcast=True)
-        
-        # Load History
-        conn = sqlite3.connect('chat_history.db')
-        curr = conn.cursor()
-        curr.execute("SELECT username, content, timestamp FROM Messages ORDER BY id ASC")
-        rows = curr.fetchall()
-        for r in rows:
-            try:
-                decrypted = cipher_suite.decrypt(r[1].encode('utf-8')).decode('utf-8')
-                emit('message', {'user': r[0], 'msg': decrypted, 'time': r[2]})
-            except: pass
-    else:
-        # ❌ FAIL: Increment Counter
-        if user_ip not in failed_attempts:
-            failed_attempts[user_ip] = {'count': 0, 'ban_until': 0}
-        
-        failed_attempts[user_ip]['count'] += 1
-        
-        # 🛡️ 3. BAN IF 3 FAILS
-        if failed_attempts[user_ip]['count'] >= 3:
-            failed_attempts[user_ip]['ban_until'] = current_time + 30 # Ban for 30 seconds
-            emit('login_response', {'status': 'fail', 'msg': '⛔ TOO MANY ATTEMPTS. IP BANNED FOR 30s.'})
-        else:
-            remaining = 3 - failed_attempts[user_ip]['count']
-            emit('login_response', {'status': 'fail', 'msg': f'Invalid Password! {remaining} attempts left.'})
-
-@socketio.on('register')
-def handle_register(data):
-    username = html.escape(data['user'])
-    password = data['pass']
-    hashed_pw = generate_password_hash(password)
-    try:
-        conn = sqlite3.connect('chat_history.db')
-        curr = conn.cursor()
-        curr.execute("INSERT INTO Users (username, password_hash) VALUES (?, ?)", (username, hashed_pw))
-        conn.commit()
-        conn.close()
-        emit('register_response', {'status': 'success', 'msg': 'Registration Successful!'})
-    except:
-        emit('register_response', {'status': 'fail', 'msg': 'Username taken!'})
-
-@socketio.on('message')
-def handle_message(data):
-    username = data['user']
-    clean_msg = html.escape(data['msg']) # 🛡️ Sanitize
-    current_time = datetime.now().strftime("%I:%M %p") 
-
-    msg_bytes = clean_msg.encode('utf-8')
-    encrypted_msg = cipher_suite.encrypt(msg_bytes).decode('utf-8')
-    
-    conn = sqlite3.connect('chat_history.db')
-    curr = conn.cursor()
-    curr.execute("INSERT INTO Messages (username, content, timestamp) VALUES (?, ?, ?)", (username, encrypted_msg, current_time))
-    conn.commit()
-    conn.close()
-
-    decrypted_content = cipher_suite.decrypt(encrypted_msg.encode('utf-8')).decode('utf-8')
-    send({"user": username, "msg": decrypted_content, "time": current_time}, broadcast=True)
+def typing(data):
+    room = "_".join(sorted([data['sender'], data['recipient']]))
+    emit('is_typing', data, room=room)
 
 if __name__ == '__main__':
     socketio.run(app, debug=True)
